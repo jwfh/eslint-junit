@@ -38,5 +38,9 @@ const getAppOptions = function getAppOptions(pathToResolve) {
 };
 
 module.exports = function getOptions() {
-    return { ...constants.DEFAULT_OPTIONS, ...getAppOptions(process.cwd()), ...getEnvOptions() };
+    const appOptions = getAppOptions(process.cwd());
+    const condensed = 'condensed' in appOptions && appOptions.condensed;
+    return {
+        ...constants.DEFAULT_OPTIONS, ...(condensed ? constants.OPTIONS_CONDENSED : {}), ...appOptions, ...getEnvOptions(),
+    };
 };

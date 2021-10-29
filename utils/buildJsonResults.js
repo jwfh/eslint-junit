@@ -39,10 +39,11 @@ module.exports = function buildJsonResults(report, appDirectory, options) {
             ],
         };
 
-        // Iterate through test cases
-        suite.messages.forEach((tc) => {
-            const obj = { ...suite, fileName: suite.filePath.replace(appDirectory, ''), ...tc };
-
+        if (options.condensed) {
+            const obj = {
+                ...suite,
+                fileName: suite.filePath.replace(appDirectory, ''),
+            };
             const testCase = {
                 testcase: [
                     {
@@ -54,25 +55,85 @@ module.exports = function buildJsonResults(report, appDirectory, options) {
                     },
                 ],
             };
-
             const addTag = function addTag(type) {
-                testCase.testcase.push({ [type]: stripAnsi(tc.message) });
+                testCase.testcase.push({
+                    [type]: suite.messages.map((tc) => stripAnsi(buildTemplate(options.bodyTemplate, {
+                        ...obj,
+                        severityWord: ((severity) => {
+                            switch (severity) {
+                                case 1:
+                                    return 'WARN';
+                                case 2:
+                                    return 'FAIL';
+                            }
+                        })(tc.severity),
+                        ...tc,
+                    }))).join('\n'),
+                });
             };
+
+            
 
             // Write out all failure messages as <failure> tags
             // Nested underneath <testcase> tag
-            if (tc.severity === 2) {
+            if (obj.severity === 2 || options.condensed) {
                 addTag('failure');
             }
 
             // Write out a <skipped> tag if test is skipped
             // Nested underneath <testcase> tag
-            if (tc.severity === 1) {
+            if (!options.condensed && obj.severity === 1) {
                 addTag('skipped');
             }
 
             testSuite.testsuite.push(testCase);
-        });
+        } else {
+            suite.messages.forEach((tc) => {
+                const obj = {
+                    ...suite,
+                    fileName: suite.filePath.replace(appDirectory, ''),
+                    severityWord: ((severity) => {
+                        switch (severity) {
+                            case 1:
+                                return 'WARN';
+                            case 2:
+                                return 'FAIL';
+                        }
+                    })(tc.severity),
+                    ...tc,
+                };
+
+                const testCase = {
+                    testcase: [
+                        {
+                            _attr: {
+                                classname: buildTemplate(options.classNameTemplate, obj),
+                                name: buildTemplate(options.titleTemplate, obj),
+                                time: 1,
+                            },
+                        },
+                    ],
+                };
+
+                const addTag = function addTag(type) {
+                    testCase.testcase.push({ [type]: stripAnsi(buildTemplate(options.bodyTemplate, obj)) });
+                };
+
+                // Write out all failure messages as <failure> tags
+                // Nested underneath <testcase> tag
+                if (obj.severity === 2 || (options.treatWarnAsFail && obj.severity === 1)) {
+                    addTag('failure');
+                }
+
+                // Write out a <skipped> tag if test is skipped
+                // Nested underneath <testcase> tag
+                if (!options.treatWarnAsFail && obj.severity === 1) {
+                    addTag('skipped');
+                }
+
+                testSuite.testsuite.push(testCase);
+            });
+        }
 
         jsonResults.testsuites.push(testSuite);
     });
