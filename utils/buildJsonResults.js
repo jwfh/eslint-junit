@@ -41,7 +41,7 @@ module.exports = function buildJsonResults(report, appDirectory, options) {
 
         // Iterate through test cases
         suite.messages.forEach((tc) => {
-            const obj = { ...suite, ...tc };
+            const obj = { ...suite, fileName: suite.filePath.replace(appDirectory, ''), ...tc };
 
             const testCase = {
                 testcase: [
