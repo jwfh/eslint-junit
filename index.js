@@ -17,14 +17,14 @@ const getOptions = require('./utils/getOptions');
   http://help.catchsoftware.com/display/ET/JUnit+Format
 */
 module.exports = (report) => {
-  const options = getOptions();
-  const jsonResults = buildJsonResults(report, fs.realpathSync(process.cwd()), options);
+    const options = getOptions();
+    const jsonResults = buildJsonResults(report, fs.realpathSync(process.cwd()), options);
 
-  // Ensure output path exists
-  mkdirp.sync(path.dirname(options.output));
+    // Ensure output path exists
+    mkdirp.sync(path.dirname(options.output));
 
-  // Write data to file
-  fs.writeFileSync(options.output, xml(jsonResults, {'indent': '  '}));
+    // Write data to file
+    fs.writeFileSync(options.output, xml(jsonResults, { indent: '  ' }));
 
-  return '';
+    return '';
 };
